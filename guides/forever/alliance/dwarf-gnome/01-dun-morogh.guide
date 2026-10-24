@@ -14,8 +14,8 @@ next forever/alliance/02-westfall
 # Frostmane Hold -> back east to Kharanos and the depot -> Misty Pine
 # Refuge -> Amberstill Ranch and the
 # Gol'Bolar Quarry -> North Gate Outpost -> hearth to Kharanos -> Brewnall ->
-# Farsen above the quarry -> South Gate Outpost -> back to Mehr and Farsen ->
-# Old Icebeard's cave ->
+# Old Icebeard's cave -> Farsen above the quarry -> South Gate Outpost ->
+# back to Mehr and Farsen ->
 # Ironforge (training) and the tram to Stormwind.
 #
 # Order changes against the export:
@@ -79,6 +79,10 @@ next forever/alliance/02-westfall
 #   Iron Spies along the way count, and handed in on the way back west,
 #   instead of reaching the South Gate first and walking back east for the
 #   kills (played at level 11 in a recorded Dwarf Paladin run).
+# - MacGrann's Stolen Stash (312, from level 7) is done after the second
+#   Brewnall stop, before heading east to the depot and quarry. Nothing in
+#   the chain needs the eastern trip first; doing it afterwards sent the
+#   route back across Dun Morogh to the west before Ironforge.
 #
 # Left out: "Stout to Kadrell" (414) is never turned in (the route goes to
 # Westfall, not Loch Modan). "The Reports" (291) is handed to Senator Barin
@@ -477,7 +481,7 @@ step Stolen Blasting Powder
 step Leopards and boars
   tip Snow Leopards and boars roam the snow between the ranch and the quarry. Blacksmiths: Copper Bars come from smelting Copper Ore or the trade vendors.
   collect 267414 quest 95212.1                -- Pristine Leopard Pelt
-  collect 267416 quest 95217.1 optional       -- Toughened Boar Hide
+  collect 267416 quest 95217 optional         -- Toughened Boar Hide; resolve its objective by item, after Copper Bars in QuestieDB 1.0.7
 
 step Gol'Bolar Quarry
   turnin 95217 optional                       -- Frast Dokner
@@ -528,6 +532,14 @@ step Brewnall Village
   turnin 311                                  -- Marleth Barleybrew
   turnin 315                                  -- Rejold Barleybrew
   accept 413
+
+# ---------------------------------------------------------------- Old Icebeard, on the way back east
+
+step Tundra MacGrann
+  tip Tundra MacGrann camps in Chill Breeze Valley, south of Brewnall. His meats are in the locker in Old Icebeard's cave, north-east of his camp. Old Icebeard is an elite yeti: wait out of sight until he wanders off on his patrol, then take the meats and leave before he comes back. You don't need to fight him.
+  accept 312 lvl 7                            -- Tundra MacGrann
+  collect 2667 quest 312.1                    -- MacGrann's Dried Meats: the meat locker
+  turnin 312
 
 # ---------------------------------------------------------------- South Gate and Farsen
 
@@ -594,14 +606,6 @@ step Senator Mehr Stonehallow
 step Earthseer Farsen
   turnin 96390
   turnin 96391
-
-# ---------------------------------------------------------------- Old Icebeard
-
-step Tundra MacGrann
-  tip Tundra MacGrann camps in Chill Breeze Valley, south of Brewnall. His meats are in the locker in Old Icebeard's cave, north-east of his camp. Old Icebeard is an elite yeti: wait out of sight until he wanders off on his patrol, then take the meats and leave before he comes back. You don't need to fight him.
-  accept 312                                  -- Tundra MacGrann
-  collect 2667 quest 312.1                    -- MacGrann's Dried Meats: the meat locker
-  turnin 312
 
 # ---------------------------------------------------------------- Ironforge
 

@@ -12,7 +12,7 @@ next forever/alliance/02-westfall
 #
 # Flow: Northshire Valley (Abbey, the kobold camp, Echo Ridge Mine, the
 # Defias and Milly's vineyard) -> Goldshire (bind) and Crystal Lake -> the
-# south: the Maclure Vineyards, the Fargodeep Mine and the Stonefield farm ->
+# south: the Maclure Vineyards, the Stonefield farm and the Fargodeep Mine ->
 # Goldshire -> the east: the Tower of Azora, the bridge, Brackwell, Eastvale,
 # Stone Cairn Lake, the gnoll camps and the Jasperlode Mine -> Goldshire ->
 # the farms and Westbrook -> hearth to Goldshire -> the east again -> the
@@ -87,6 +87,10 @@ next forever/alliance/02-westfall
 #   the entrance, so they are picked up on the walk in to the mine's far end
 #   (76), and the Kobold Geomancers (91723) are killed on the way back out,
 #   towards the Tower of Azora (#612).
+# - Fargodeep: finish the Stonefields and Billy's necklace errands before
+#   entering the mine, then do Goldtooth with the exploration, candles,
+#   gold dust and optional books. The old order cleared the mine before
+#   Lost Necklace (85), then entered it again after Back to Billy (84).
 #
 # Class quests, as class-only steps (the level 10-12 ones from the last
 # Goldshire stop, about level 12):
@@ -296,14 +300,6 @@ step Maybell Maclure
   tip Follow the road south out of Goldshire to the Maclure Vineyards. Maybell waits by the house.
   accept 106
 
-step The Fargodeep Mine
-  tip The mine is west of the vineyards. Kobold Miners and Tunnelers fill both levels; Nimsy, a named kobold, holds the picture book in the lower tunnels. Nimsy is elite: grouping up is advised.
-  complete 62 @40.6,82.3                      -- Walk through the mine
-  collect 773 quest 47                        -- Gold Dust
-  collect 772 quest 60                        -- Large Candles
-  collect 248001 quest 91775 optional         -- Lost Books: Kobold Miners and Tunnelers
-  collect 248002 quest 91775 optional         -- Fun with Elementals: Nimsy
-
 step Bait ingredients
   tip Overgrown Duskweed grows in the fields around the vineyards and the Stonefield farm; Stonetusk Boars around them give the blood.
   collect 286214 quest 99130                  -- Duskweed Petal
@@ -349,9 +345,14 @@ step Billy Maclure
   accept 87
   goto 39.5,82.4 "Fargodeep Mine"
 
-step Goldtooth
-  tip Goldtooth is inside the Fargodeep Mine, not on the hill above it: go in at the mouth and keep left to the back of the mine floor; don't take the stairs up. Defias Bandits around the vineyards drop a Westfall Deed now and then: right-click it.
-  collect 981 quest 87                        -- Bernice's Necklace
+step The Fargodeep Mine and Goldtooth
+  tip Goldtooth is inside the Fargodeep Mine, not on the hill above it: enter at the mouth and keep left along the mine floor. Kobold Miners and Tunnelers drop the dust, candles and Lost Books on the way. Nimsy, in the lower tunnels, holds the picture book and is elite: grouping up is advised. Defias Bandits around the vineyards drop a Westfall Deed now and then: right-click it.
+  collect 981 quest 87                        -- Bernice's Necklace; the cave-mouth waypoint leads to Goldtooth first
+  complete 62 @40.6,82.3                      -- Walk through the mine
+  collect 773 quest 47                        -- Gold Dust
+  collect 772 quest 60                        -- Large Candles
+  collect 248001 quest 91775 optional         -- Lost Books: Kobold Miners and Tunnelers
+  collect 248002 quest 91775 optional         -- Fun with Elementals: Nimsy
   collect 1972 x1 optional                    -- Westfall Deed
   accept 184 optional
 

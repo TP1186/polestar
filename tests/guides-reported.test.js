@@ -7,7 +7,9 @@
 // rule (tests/lint-timed.test.js); the Fargodeep Mine and Blackfathom Deeps
 // mouths are in tests/guides-caves.test.js.
 //
-// Needs data/forever (forge data build); skips without it.
+// Most cases need data/forever (forge data build) and skip without it.
+// The authored-order and shipped-metadata Engine regressions also run in a
+// fresh clone, without claiming a full guide compilation or playthrough.
 
 const { test } = require('node:test');
 const assert = require('node:assert/strict');
@@ -21,8 +23,11 @@ const { DATA, SOURCES } = require('../tools/lib/paths');
 const { loadWeb } = require('../tools/lib/codex/web');
 const { runAddon } = require('./helpers/lua');
 const { writeTestPack } = require('./helpers/dsl');
-const { buildSimPack, playGuide, SIMULATE } = require('../tools/lib/playtest');
+const { buildSimPack, playGuide, SIMULATE, luaValue } = require('../tools/lib/playtest');
 const { makeProjector, dist } = require('../tools/lib/route/geo');
+const { parseGuide } = require('../tools/lib/dsl/parse');
+const { Diagnostics } = require('../tools/lib/dsl/diag');
+const { applicable } = require('../tools/lib/dsl/conditions');
 
 const skip = needs('quests.json', 'npcs.json', 'objects.json', 'map-frames.json');
 
@@ -102,6 +107,171 @@ const is = (t, quest) => (g) => g.t === t && g.quest === quest;
 const located = ({ goal }) => goal.map != null && goal.x != null;
 // Goals every character of the guide does (no `only` on the goal or its step).
 const everyone = ({ step, goal }) => !step.only && !goal.only;
+
+// Authored travel order is meaningful without a local game-data build too.
+// These use the real parser, not a second interpretation of .guide text;
+// The other cases that compile guides still require full reference data.
+function authoredRoute(file) {
+	const diag = new Diagnostics();
+	const ast = parseGuide(fs.readFileSync(path.join(OFFICIAL_DIR, file), 'utf8'), file, diag);
+	assert.deepEqual(diag.errors, [], `${file}: parses`);
+	return ast.steps.flatMap((step, s) => step.goals.map((goal) => ({ step, s: s + 1, goal: { ...goal, t: goal.verb } })));
+}
+
+test('Alliance route audit: Sentinel Hill finishes the tower before the flight master and inn', () => {
+	const list = authoredRoute('forever/alliance/02-westfall.guide');
+	const bind = at(list, 'Sentinel Hill bind', (g) => g.t === 'sethome');
+	const fp = at(list, 'Sentinel Hill flight path', (g) => g.t === 'getfp');
+	for (const [t, q] of [['accept', 6181], ['turnin', 98021], ['turnin', 109], ['accept', 12], ['accept', 102]]) {
+		assert.ok(at(list, `${t} ${q}`, is(t, q)) < fp, `${t} ${q}: tower work before Thor`);
+	}
+	const letter = at(list, 'Thor letter', is('turnin', 6181));
+	assert.equal(letter, fp + 1, 'learn the flight and deliver the letter in one visit to Thor');
+	assert.ok(letter < bind, 'Thor before the inn to the west');
+	assert.equal(list[bind].goal.location, 'Sentinel Hill');
+	assert.ok(bind < at(list, 'later hearth', (g) => g.t === 'hearth' && g.location === 'Sentinel Hill'));
+	for (const q of [109, 36, 151, 64, 9, 22, 38, 92909]) {
+		assert.ok(at(list, `roadside accept ${q}`, is('accept', q)) < at(list, 'hill report', is('turnin', 109)), 'keep the released road-in fix');
+	}
+	assert.deepEqual(applicable([list[at(list, 'Human letter', is('accept', 6181))].goal.only]).races, ['Human']);
+	assert.deepEqual(applicable([list[at(list, 'Skyborne arrival', is('turnin', 98021))].goal.only]).races, ['Skyborne']);
+	for (const q of [92742, 92744]) {
+		assert.deepEqual(applicable([list[at(list, `Alba ${q}`, is('accept', q))].goal.only]).races, ['Dwarf', 'Gnome', 'NightElf', 'Skyborne']);
+	}
+});
+
+test('Alliance route audit: Lakeshire takes the bridge and dock quests before binding at the inn', () => {
+	const list = authoredRoute('forever/alliance/04-redridge-mountains.guide');
+	const bind = at(list, 'Lakeshire bind', (g) => g.t === 'sethome');
+	for (const q of [125, 20, 91, 150, 127]) assert.ok(at(list, `accept ${q}`, is('accept', q)) < bind);
+	assert.ok(at(list, 'Wiley', is('turnin', 65)) < bind);
+	assert.ok(bind < at(list, 'Chef Breanna', is('accept', 92)));
+	assert.equal(list[bind].goal.location, 'Lakeshire');
+	assert.ok(bind < at(list, 'Lakeshire hearth', (g) => g.t === 'hearth' && g.location === 'Lakeshire'));
+	assert.ok(at(list, 'bridge handed in', is('turnin', 89)) < at(list, 'mill follow-up', is('accept', 98386)));
+	assert.equal(list[at(list, 'Fangore poster', is('accept', 180))].goal.minLevel, 21);
+});
+
+test('Alliance route audit: MacGrann is finished on the western leg before the final eastbound depot visit', () => {
+	const list = authoredRoute(DUN_MOROGH);
+	const stash = at(list, 'MacGrann stash', is('accept', 312));
+	assert.ok(at(list, 'second Brewnall visit', is('accept', 413)) < stash);
+	assert.ok(at(list, 'stash hand-in', is('turnin', 312)) < at(list, 'eastbound depot lead', is('accept', 96408)));
+	assert.ok(stash < at(list, 'eastern quarry lead', is('accept', 433)));
+	assert.equal(list[stash].goal.minLevel, 7, 'keep the real minimum level explicit after moving the quest');
+});
+
+test('Alliance route audit: the quarry hide objective is resolved from the item instead of a stale objective number', () => {
+	const list = authoredRoute(DUN_MOROGH);
+	const hide = list.find(({ goal }) => goal.t === 'collect' && goal.item === 267416);
+	assert.ok(hide);
+	assert.equal(hide.goal.quest, 95217);
+	assert.equal(hide.goal.oi, undefined, 'QuestieDB may order Copper Bars before the hide; let the compiler identify the item');
+	assert.equal(hide.goal.optional, true, 'the blacksmith-only extra stays optional');
+});
+
+test('Alliance route audit: Fargodeep exploration and loot wait for Goldtooth so the mine is entered once', () => {
+	const list = authoredRoute(ELWYNN);
+	const goldtooth = at(list, 'Goldtooth accept', is('accept', 87));
+	for (const [t, q] of [['complete', 62], ['collect', 47], ['collect', 60], ['collect', 91775], ['collect', 87]]) {
+		assert.ok(goldtooth < at(list, `${t} ${q}`, is(t, q)), `${t} ${q}: with Goldtooth already held`);
+	}
+	for (const [a, b] of [[85, 86], [86, 84], [84, 87]]) {
+		assert.ok(at(list, `turnin ${a}`, is('turnin', a)) < at(list, `accept ${b}`, is('accept', b)), 'preserve the necklace chain');
+	}
+	const mine = list[at(list, 'Goldtooth loot', is('collect', 87))].step;
+	for (const q of [47, 60, 91775]) assert.equal(list[at(list, `mine loot ${q}`, is('collect', q))].step, mine);
+	assert.equal(list[at(list, 'optional elite books', is('collect', 91775))].goal.optional, true);
+});
+
+test('Alliance route audit: the Stormwind dock is the final Darkshore departure after Druid class work', () => {
+	const list = authoredRoute('forever/alliance/03-darkshore.guide');
+	const dock = at(list, 'Stormwind dock', (g) => g.t === 'goto' && g.x === 30.76 && g.y === 40.92);
+	for (const q of [98397, 6125]) assert.ok(at(list, `class turnin ${q}`, is('turnin', q)) < dock);
+	assert.equal(list[dock].s, Math.max(...list.map((g) => g.s)), 'departure is the last step for every class');
+	assert.equal(list[dock].step.only, null, 'the common departure also applies to non-Druids');
+	const form = list[at(list, 'Cat Form', is('turnin', 98397))];
+	assert.deepEqual(applicable([form.step.only, form.goal.only]).classes, ['DRUID']);
+	const poison = list[at(list, 'Cure Poison', is('turnin', 6125))];
+	assert.deepEqual(applicable([poison.step.only, poison.goal.only]).races, ['NightElf']);
+});
+
+test('Alliance route audit: Forge hard orders agree with the authored mine and western-leg routes', () => {
+	const fixes = JSON.parse(fs.readFileSync(path.join(OFFICIAL_DIR, '..', 'data', 'route-fixes.json'), 'utf8'));
+	const pairs = fixes.deliberate.pairs;
+	for (const [file, a, b] of [
+		[DUN_MOROGH, ['accept', 413], ['accept', 312]],
+		[DUN_MOROGH, ['turnin', 312], ['accept', 96408]],
+		...[62, 47, 60, 91775].map((q) => [ELWYNN, ['accept', 87], ['task', q]]),
+	]) {
+		assert.ok(pairs.some((p) => JSON.stringify(p.a) === JSON.stringify(a) && JSON.stringify(p.b) === JSON.stringify(b)), `${file}: Forge preserves ${a} before ${b}`);
+		const list = authoredRoute(file);
+		const matches = ([t, q]) => (g) => g.quest === q && (t === 'task' ? ['collect', 'complete', 'kill', 'interact', 'use'].includes(g.t) : g.t === t);
+		assert.ok(at(list, a.join(' '), matches(a)) < at(list, b.join(' '), matches(b)), 'the hard order agrees with the guide');
+	}
+});
+
+test('Alliance route audit: the real Engine follows the reordered hub visits and keeps race filters and binds', () => {
+	// Reuse the shipped pack's factual metadata for unchanged goals, ordered
+	// by the edited source. This is an Engine regression without synthetic
+	// NPC facts; it does not replace compiling/playtesting with data/forever.
+	for (const [file, quest, npc, home] of [
+		['forever/alliance/02-westfall.guide', 12, 234, 'Sentinel Hill'],
+		['forever/alliance/04-redridge-mountains.guide', 125, 341, 'Lakeshire'],
+	]) {
+		const list = authoredRoute(file);
+		const step = list[at(list, `hub quest ${quest}`, is('accept', quest))].step;
+		const order = step.goals.map((g) => ({ t: g.verb, quest: g.quest, location: g.location }));
+		for (const [race, cls] of [
+			['Human', 'WARRIOR'], ['Dwarf', 'WARRIOR'], ['Gnome', 'WARRIOR'], ['NightElf', 'WARRIOR'], ['Skyborne', 'WARRIOR'],
+			['Human', 'MAGE'], ['Dwarf', 'PRIEST'], ['Gnome', 'WARLOCK'], ['NightElf', 'DRUID'], ['Skyborne', 'DRUID'],
+		]) {
+			const [out] = runAddon({
+				stubs: ['stub_world.lua'],
+				before: `stub.world.race = ${JSON.stringify(race)}; stub.world.raceName = ${JSON.stringify(race)}
+					stub.world.faction = "Alliance"; stub.world.class = ${JSON.stringify(cls)}; stub.world.level = 22`,
+				addons: [{ name: 'Polestar', files: ['Core/Core.xml'] }, 'Polestar_Guides', { name: 'Polestar_Guides_Alliance', files: ['Guides.lua'] }],
+				saved: { Polestar: 'PolestarDB = { schema = 1, settings = { behavior = { autoSelectGuide = false } } }' },
+				script: `stub.login(); stub.advance(0.5)
+					local E, w = Polestar.Engine, stub.world
+					E.SetGuide(${JSON.stringify(file.slice(0, -6))})
+					local guide = assert(E.GetGuide())
+					local si, original
+					for i, s in ipairs(guide.steps) do
+						for _, g in ipairs(s.goals) do if g.t == "accept" and g.quest == ${quest} then si, original = i, s.goals end end
+					end
+					local reordered = {}
+					for _, source in ipairs(${luaValue(order)}) do
+						local found
+						for _, g in ipairs(original) do
+							if g.t == source.t and g.quest == source.quest and g.location == source.location then found = g; break end
+						end
+						assert(found, "authored goal missing from shipped metadata")
+						reordered[#reordered + 1] = found
+					end
+					guide.steps[si].goals = reordered
+					local v = E.GetStepView(si)
+					local out = { focus = v.groups[v.focus].npc, filters = {} }
+					for _, g in ipairs(v.goals) do if g.quest then out.filters[tostring(g.quest)] = g.status end end
+					if ${quest} == 12 then
+						w.accept(6181, {}); w.turnIn(109); w.turnIn(98021); w.accept(12, {}); w.accept(102, {})
+						local after = E.GetStepView(si)
+						out.afterTower = after.groups[after.focus].npc
+					end
+					w.bind(${JSON.stringify(home)})
+					for _, g in ipairs(E.GetStepView(si).goals) do if g.t == "sethome" then out.bound = g.status end end
+					emit(out)`,
+			}).emitted;
+			assert.equal(out.focus, quest === 12 && race === 'Human' ? 491 : npc, `${race} ${cls}: first visit is on the arrival side`);
+			assert.equal(out.bound, 'done', `${race} ${cls}: binding at ${home} completes its goal`);
+			if (quest === 12) {
+				assert.equal(out.afterTower, 523, `${race} ${cls}: after the tower, Thor precedes the inn`);
+				assert.equal(out.filters[92742] === 'na', race === 'Human', `${race}: Alba's chain eligibility`);
+				assert.equal(out.filters[6181] === 'na', race !== 'Human', `${race}: Human letter eligibility`);
+			}
+		}
+	}
+});
 // Goals a character of this class does (an `only` naming classes on the goal or its step must list it).
 const forClass = (cls) => ({ step, goal }) => [step.only, goal.only].every((o) => !o || !o.classes || o.classes.includes(cls));
 

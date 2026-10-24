@@ -78,9 +78,10 @@ next forever/alliance/03-darkshore
 #   hand in Shipment to Stormwind (61, from Elwynn) there.
 # - The Auberdine flight path and hearth the export lists at the end of this
 #   visit are taken on arrival in Darkshore (next guide).
-# - Sentinel Hill: Humans hand Thor the Quartermaster's letter (6181) after
-#   Gryan and Danuvin, who stand beside Lewis at the top of the tower, so
-#   the hill is walked down once.
+# - Sentinel Hill: finish Lewis, Gryan and Danuvin at the top of the tower
+#   before walking down to Thor (flight path and the Human letter, 6181),
+#   then Galiaan, the inn and Alba. Binding first sent every race back up
+#   the hill for the tower quests; the inn still binds for the Moonbrook hearth.
 # - Gnoll Paws (102, #385): hand-placed in the north hills (44.7,14.6, the
 #   densest Riverpaw Gnoll and Scout spawns, level 11-13). Unplaced, the
 #   arrow searched every Gnoll Paw dropper's camp in the zone, down to the
@@ -147,14 +148,14 @@ step Saldean's Farm
 step Sentinel Hill
   tip Gryan Stoutmantle and Captain Danuvin stand at the top of the stone tower. Quartermaster Lewis is in the tower, Scout Galiaan on the south side of the hill, next to the inn and Thor the gryphon master.
   accept 6181 only Human                      -- Quartermaster Lewis
-  sethome "Sentinel Hill"
-  getfp "Sentinel Hill"
   turnin 98021 only Skyborne                  -- Gryan Stoutmantle
   turnin 109
   accept 12
   accept 102                                  -- Captain Danuvin
+  getfp "Sentinel Hill"
   turnin 6181 only Human                      -- Thor; skip the free flight it offers
   accept 153                                  -- Scout Galiaan
+  sethome "Sentinel Hill"
   accept 92742 only Dwarf,Gnome,NightElf,Skyborne -- Alba Fairmoon, beside Scout Galiaan
   accept 92744 only Dwarf,Gnome,NightElf,Skyborne
 

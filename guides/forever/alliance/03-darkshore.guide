@@ -60,6 +60,9 @@ next forever/alliance/04-redridge-mountains
 #   own at the northern Blackwood camp, on the way from the Tower to the
 #   cave. The quest's only objective is the Talisman, but Xabraxxis comes
 #   only for the mixed bowl.
+# - Leave for Stormwind after the Druid class trip, not before it: the
+#   shared dock step belongs after the flight back from Darnassus. Other
+#   classes go straight to it after the last Auberdine turn-ins.
 #
 # Optional: The Family and the Fishing Pole (1141) needs Fishing.
 # Gyromast's Revenge (2078) ends with the Threshwackonator 4100, an elite: not
@@ -409,7 +412,6 @@ step Auberdine
   accept 990                                  -- Sentinel Selarin: for Raene Wolfrunner in Astranaar, on the later Ashenvale leg
   accept 97914                                -- Thundris Windweaver: for Baros Alexston in Stormwind
   vendor nearest
-  goto 30.76,40.92 "Boat to Stormwind"
 
 # ---------------------------------------------------------------- Druids: Cat Form
 
@@ -466,3 +468,8 @@ step To Darnassus
   turnin 98397                                -- Mathrengyl Bearwalker: Cat Form
   turnin 6125 only NightElf                   -- Mathrengyl Bearwalker: Cure Poison
   fly "Auberdine"
+
+step Boat to Stormwind
+  zone Darkshore
+  tip Take the Stormwind boat from Auberdine's docks. Druids finish their class trip before leaving.
+  goto 30.76,40.92 "Boat to Stormwind"

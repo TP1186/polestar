@@ -4,6 +4,36 @@
 		"about": "v1's deliberate orders (player-report fixes pinned by tests/guides-reported.test.js and the guides' 'Order changes against the export' headers) as hard precedence pairs: every step of `a` comes before every step of `b` when both are in the order. Kinds: accept, task (an objective site of the quest), turnin.",
 		"pairs": [
 			{
+				"a": ["accept", 413],
+				"b": ["accept", 312],
+				"why": "Alliance route report: MacGrann's level 7 stash follows the second Brewnall stop, not the final eastern quarry trip"
+			},
+			{
+				"a": ["turnin", 312],
+				"b": ["accept", 96408],
+				"why": "Alliance route report: finish MacGrann on the western leg before the eastbound depot lead to Farsen"
+			},
+			{
+				"a": ["accept", 87],
+				"b": ["task", 62],
+				"why": "Alliance route report: take Goldtooth before exploring Fargodeep, so the mine is entered once"
+			},
+			{
+				"a": ["accept", 87],
+				"b": ["task", 47],
+				"why": "Alliance route report: gather Fargodeep's gold dust with Goldtooth already held"
+			},
+			{
+				"a": ["accept", 87],
+				"b": ["task", 60],
+				"why": "Alliance route report: gather Fargodeep's candles with Goldtooth already held"
+			},
+			{
+				"a": ["accept", 87],
+				"b": ["task", 91775],
+				"why": "Alliance route report: optional Fargodeep books share the Goldtooth visit"
+			},
+			{
 				"a": [
 					"turnin",
 					788
